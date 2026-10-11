@@ -1,557 +1,241 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tournament Leaderboard & Analytics</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            400: '#4ade80',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                            900: '#14532d',
-                            950: '#052e16',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Leaderboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
 
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400">
-                    <i data-lucide="trophy" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg text-white leading-tight">Wargaming Leaderboard</h1>
-                    <div class="flex items-center gap-2 mt-0.5">
-                        <span id="connectionBadge" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse mr-1"></span> Connecting...
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Header Action Controls -->
-            <div class="flex items-center space-x-2 sm:space-x-3">
-                <button id="btnRefreshData" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition" title="Fetch live data from Google Sheets">
-                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5 mr-1.5 text-emerald-400"></i>
-                    Sync Live
-                </button>
-                <button id="btnOpenDataModal" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
-                    <i data-lucide="database" class="w-3.5 h-3.5 mr-1.5 text-emerald-400"></i>
-                    Data
-                </button>
-                <button id="btnToggleGuide" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-lg shadow-emerald-950/40">
-                    <i data-lucide="book-open" class="w-3.5 h-3.5 mr-1.5"></i>
-                    User Guide
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        <!-- Sidebar Filter Controls -->
-        <aside class="lg:col-span-3 space-y-4">
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
-                <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
-                    <h2 class="font-semibold text-xs text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                        <i data-lucide="filter" class="w-4 h-4 text-emerald-400"></i>
-                        Event Filters
-                    </h2>
-                    <button id="btnClearFilters" class="text-xs text-slate-400 hover:text-emerald-400 transition hidden">Reset All</button>
-                </div>
-
-                <div class="space-y-3.5 text-xs">
-                    <!-- Host Filter -->
-                    <div>
-                        <label class="block font-medium text-slate-400 mb-1">Host</label>
-                        <select id="filterHost" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
-                            <option value="">All Hosts</option>
-                        </select>
-                    </div>
-
-                    <!-- Format Filter -->
-                    <div>
-                        <label class="block font-medium text-slate-400 mb-1">Format</label>
-                        <select id="filterFormat" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
-                            <option value="">All Formats</option>
-                        </select>
-                    </div>
-
-                    <!-- Duration Filter -->
-                    <div>
-                        <label class="block font-medium text-slate-400 mb-1">Duration</label>
-                        <select id="filterDuration" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
-                            <option value="">All Durations</option>
-                        </select>
-                    </div>
-
-                    <!-- Points Filter -->
-                    <div>
-                        <label class="block font-medium text-slate-400 mb-1">Point Limit</label>
-                        <select id="filterPoints" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
-                            <option value="">All Limits</option>
-                        </select>
-                    </div>
-
-                    <!-- Event Name Filter -->
-                    <div>
-                        <label class="block font-medium text-slate-400 mb-1">Event Name</label>
-                        <select id="filterEvent" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
-                            <option value="">All Events</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Overview Box -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl text-xs space-y-2.5">
-                <h3 class="font-semibold text-slate-300 border-b border-slate-800 pb-2">Analytics Overview</h3>
-                <div class="flex justify-between text-slate-400">
-                    <span>Filtered Matches:</span>
-                    <span id="statActiveMatches" class="font-bold text-slate-200">0 / 0</span>
-                </div>
-                <div class="flex justify-between text-slate-400">
-                    <span>Active Competitors:</span>
-                    <span id="statActivePlayers" class="font-bold text-emerald-400">0</span>
-                </div>
-            </div>
-        </aside>
-
-        <main id="mainContainer" class="lg:col-span-9 transition-all duration-300">
-            <div class="bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden">
-                <!-- Search Toolbar -->
-                <div class="p-4 border-b border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div class="relative w-full sm:w-72">
-                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-500"></i>
-                        <input id="searchPlayer" type="text" placeholder="Search competitor..." class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
-                    </div>
-                    <div class="text-xs text-slate-400 self-end sm:self-center">
-                        Natural order standings
-                    </div>
-                </div>
-
-                <!-- Leaderboard Table Structure -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-slate-300">
-                        <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 select-none">
-                            <tr>
-                                <th scope="col" class="py-3 px-4 w-12 text-center">#</th>
-                                <th scope="col" class="py-3 px-4 font-semibold">Player List</th>
-                                <th scope="col" class="py-3 px-4 font-semibold text-right">Standard ELO</th>
-                                <th scope="col" class="py-3 px-4 font-semibold text-right">MoV ELO</th>
-                                <th scope="col" class="py-3 px-4 font-semibold text-right">Number of Games</th>
-                                <th scope="col" class="py-3 px-4 font-semibold text-right">Win Rate</th>
-                                <th scope="col" class="py-3 px-4 font-semibold text-right">VP</th>
-                                <th scope="col" class="py-3 px-4 font-semibold text-right">VP Diff</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leaderboardBody" class="divide-y divide-slate-800/60 font-mono">
-                            <!-- Rendered dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Empty State -->
-                <div id="emptyState" class="hidden py-16 text-center space-y-3">
-                    <i data-lucide="search-x" class="w-10 h-10 text-slate-600 mx-auto"></i>
-                    <p class="text-sm font-medium text-slate-400">No competitors found for the selected filters.</p>
-                </div>
-            </div>
-        </main>
-
-        <aside id="guidePanel" class="lg:col-span-3 space-y-4 hidden">
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl text-xs space-y-5 sticky top-20">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                    <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
-                        <i data-lucide="help-circle" class="w-4 h-4 text-emerald-400"></i>
-                        User Guide
-                    </h3>
-                    <button id="btnCloseGuide" class="text-slate-400 hover:text-slate-200">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
-                </div>
-
-                <!-- Section 1 -->
-                <div>
-                    <h4 class="font-semibold text-emerald-400 text-sm mb-1.5 flex items-center gap-1.5">
-                        <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
-                        The Event Filters
-                    </h4>
-                    <p class="text-slate-300 leading-relaxed">
-                        The dropdown filters in the left sidebar let you narrow down the leaderboard by specific event details (like Host, Format, Duration, Points, or Event Name). If you leave all the filters blank, the table automatically defaults to showing the full list of every player across all recorded matches. When you adjust the filters, the ELO, MoV Elo, number of games, and win rate will automatically adjust to reflect only the data for the filters you have applied. Changing any filter will instantly update the standings on the fly.
-                    </p>
-                </div>
-
-                <hr class="border-slate-800">
-
-                <!-- Section 2 -->
-                <div>
-                    <h4 class="font-semibold text-emerald-400 text-sm mb-1.5 flex items-center gap-1.5">
-                        <i data-lucide="shield" class="w-3.5 h-3.5"></i>
-                        Standard ELO: The Basic Skill Score
-                    </h4>
-                    <p class="text-slate-300 leading-relaxed mb-2">
-                        Standard ELO is your basic skill score. Everyone starts at 1500 points. When you win a match, you take points from the other player, and when you lose, you give points to them.
-                    </p>
-                    <p class="text-slate-300 leading-relaxed">
-                        The system also looks at who you are playing. If you beat a very good player, you get a lot of points because it is a big upset. If you beat a brand new player, you only get a few points because you were supposed to win. In the same way, losing to a beginner hurts your score a lot, but losing to a pro does not hurt nearly as much.
-                    </p>
-                </div>
-
-                <hr class="border-slate-800">
-
-                <!-- Section 3 -->
-                <div>
-                    <h4 class="font-semibold text-emerald-400 text-sm mb-1.5 flex items-center gap-1.5">
-                        <i data-lucide="swords" class="w-3.5 h-3.5"></i>
-                        MoV ELO: The Score-Gap Score
-                    </h4>
-                    <p class="text-slate-300 leading-relaxed mb-2">
-                        MoV ELO works the exact same way, but it also looks at your final score to see <em>how hard</em> you won or lost.
-                    </p>
-                    <p class="text-slate-300 leading-relaxed">
-                        If you win a game by just a tiny bit, your score goes up a little. If you crush your opponent and win by a huge margin, your score goes up a lot. This helps when you lose, too. If you fight hard and lose by just one point, your penalty is small. But if you get completely wiped out, your score drops much more.
-                    </p>
-                </div>
-            </div>
-        </aside>
+  <!-- Header -->
+  <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">Tournament Leaderboard</h1>
+      <p class="text-xs text-slate-400">Live standings & player statistics</p>
     </div>
-
-    <div id="dataModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="font-bold text-slate-100 flex items-center gap-2">
-                    <i data-lucide="database" class="w-5 h-5 text-emerald-400"></i>
-                    Raw JSON Match Data Inspection
-                </h3>
-                <button id="btnCloseDataModal" class="text-slate-400 hover:text-slate-200">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <p class="text-xs text-slate-400">
-                Viewing active match dataset loaded from Google Sheets or fallback sample storage.
-            </p>
-
-            <div>
-                <textarea id="rawMatchInput" rows="10" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-emerald-500" readonly></textarea>
-            </div>
-
-            <div class="flex items-center justify-end pt-2">
-                <button id="btnCancelImport" class="px-4 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">
-                    Close
-                </button>
-            </div>
-        </div>
+    <div class="flex items-center gap-3">
+      <span id="sync-status" class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Using Offline Cache</span>
+      <button onclick="fetchLiveLeaderboardData()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-medium rounded-lg transition">Sync Live Sheet</button>
+      <button onclick="toggleGuide()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg transition">Guide</button>
     </div>
+  </header>
 
-    <script>
-        const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwyJ0SLmWwFWVDlEupWjsZEP97gAFCph0aLFh0tWheQC8-o3ri8MHqvJ_LS8yfBCzG5/exec";
+  <div class="flex flex-1 overflow-hidden">
+    
+    <!-- Sidebar Filters -->
+    <aside class="w-72 bg-slate-900/50 border-r border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto">
+      <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Event Filters</h2>
+      
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">Host</label>
+        <select id="filter-host" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+          <option value="">All Hosts</option>
+        </select>
+      </div>
 
-        // Fallback sample dataset if offline or fetch fails
-        const fallbackMatches = [
-            { host: "LGS North", format: "Matchplay", duration: "120m", points: "2000", eventName: "Grand Clash 2026", playerA: "Valerie", playerB: "Dave", vpA: 22, vpB: 10, result: 1 },
-            { host: "LGS North", format: "Matchplay", duration: "120m", points: "2000", eventName: "Grand Clash 2026", playerA: "Sarah", playerB: "Chris", vpA: 15, vpB: 16, result: 0 },
-            { host: "LGS South", format: "Skirmish", duration: "60m", points: "1000", eventName: "Blitz Cup", playerA: "Valerie", playerB: "Sarah", vpA: 10, vpB: 8, result: 1 },
-            { host: "LGS South", format: "Skirmish", duration: "60m", points: "1000", eventName: "Blitz Cup", playerA: "Dave", playerB: "Chris", vpA: 5, vpB: 15, result: 0 },
-            { host: "HQ Arena", format: "Narrative", duration: "180m", points: "3000", eventName: "Apotheosis", playerA: "Dave", playerB: "Sarah", vpA: 45, vpB: 10, result: 1 },
-            { host: "HQ Arena", format: "Narrative", duration: "180m", points: "3000", eventName: "Apotheosis", playerA: "Valerie", playerB: "Chris", vpA: 30, vpB: 28, result: 1 }
-        ];
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">Format</label>
+        <select id="filter-format" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+          <option value="">All Formats</option>
+        </select>
+      </div>
 
-        let matches = [];
-        let guideVisible = false;
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">Event Name</label>
+        <select id="filter-event" onchange="applyFilters()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+          <option value="">All Events</option>
+        </select>
+      </div>
 
-        window.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            fetchLiveData();
-            setupEventListeners();
-        });
+      <button onclick="resetFilters()" class="mt-2 w-full py-2 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg text-slate-300 transition">Reset Filters</button>
+    </aside>
 
-        async function fetchLiveData() {
-            setConnectionStatus('connecting', 'Connecting to Google Sheets...');
-            try {
-                const response = await fetch(GOOGLE_WEB_APP_URL);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
-                
-                if (Array.isArray(data) && data.length > 0) {
-                    matches = data;
-                    setConnectionStatus('live', 'Connected (Live Google Sheet)');
-                } else {
-                    throw new Error("Empty data returned");
-                }
-            } catch (error) {
-                console.warn("Using offline fallback dataset due to:", error);
-                matches = fallbackMatches;
-                setConnectionStatus('fallback', 'Offline (Sample Dataset)');
-            }
-            populateFilters();
-            renderLeaderboard();
+    <!-- Main Table Area -->
+    <main class="flex-1 p-6 overflow-x-auto">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-800/60 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-700">
+              <th class="p-4 font-semibold">Player List</th>
+              <th class="p-4 font-semibold text-right">Standard ELO</th>
+              <th class="p-4 font-semibold text-right">MoV ELO</th>
+              <th class="p-4 font-semibold text-right">Games</th>
+              <th class="p-4 font-semibold text-right">Win Rate</th>
+              <th class="p-4 font-semibold text-right">VP</th>
+              <th class="p-4 font-semibold text-right">VP Diff</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body" class="divide-y divide-slate-800/60 text-slate-200">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Guide Drawer / Modal Overlay -->
+  <div id="guide-drawer" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex justify-end z-50">
+    <div class="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full p-6 overflow-y-auto flex flex-col justify-between">
+      <div>
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg font-bold">User Guide</h2>
+          <button onclick="toggleGuide()" class="text-slate-400 hover:text-white">&times;</button>
+        </div>
+        <div class="space-y-4 text-sm text-slate-300">
+          <h3 class="font-semibold text-white">Event Filters</h3>
+          <p>Narrow standings by specific hosts or formats. Metrics adjust automatically to filtered matches.</p>
+          <h3 class="font-semibold text-white">Standard ELO</h3>
+          <p>Baseline rating starting at 1500. Adjusts based on win/loss upsets against opponents.</p>
+          <h3 class="font-semibold text-white">MoV ELO</h3>
+          <p>Margin of Victory rating. Rewards blowout wins and cushions narrow losses.</p>
+        </div>
+      </div>
+      <button onclick="toggleGuide()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium text-sm transition mt-6">Close</button>
+    </div>
+  </div>
+
+  <!-- Application Script -->
+  <script>
+    const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwyJ0SLmWwFWVDlEupWjsZEP97gAFCph0aLFh0tWheQC8-o3ri8MHqvJ_LS8yfBCzG5/exec";
+
+    // Fallback sample data so the page never opens blank
+    let allMatches = [
+      { host: "Northern Alliance", format: "Solo", eventName: "Winter's Wrath", playerA: "Player One", playerB: "Player Two", result: 1, vpA: 20, vpB: 10, preEloA: 1500, preEloB: 1500, postEloA: 1516, postEloB: 1484, postMovA: 1520, postMovB: 1480 },
+      { host: "Northern Alliance", format: "Solo", eventName: "Winter's Wrath", playerA: "Player Three", playerB: "Player One", result: 0, vpA: 5, vpB: 18, preEloA: 1500, preEloB: 1516, postEloA: 1484, postEloB: 1532, postMovA: 1475, postMovB: 1545 }
+    ];
+
+    function toggleGuide() {
+      const drawer = document.getElementById('guide-drawer');
+      drawer.classList.toggle('hidden');
+    }
+
+    async function fetchLiveLeaderboardData() {
+      const statusEl = document.getElementById('sync-status');
+      statusEl.textContent = "Syncing...";
+      statusEl.className = "text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20";
+
+      try {
+        const response = await fetch(GOOGLE_WEB_APP_URL);
+        if (!response.ok) throw new Error("Network response failed");
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          allMatches = data;
+          statusEl.textContent = "Live Synced";
+          statusEl.className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
         }
+      } catch (err) {
+        console.warn("Could not reach live Google Sheet. Using cached/sample data.", err);
+        statusEl.textContent = "Offline Mode";
+        statusEl.className = "text-xs px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
+      }
+      populateFilters();
+      applyFilters();
+    }
 
-        function setConnectionStatus(status, text) {
-            const badge = document.getElementById('connectionBadge');
-            if (status === 'live') {
-                badge.className = "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1"></span> ${text}`;
-            } else if (status === 'connecting') {
-                badge.className = "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse mr-1"></span> ${text}`;
-            } else {
-                badge.className = "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-400 mr-1"></span> ${text}`;
-            }
-        }
+    function populateFilters() {
+      const hosts = [...new Set(allMatches.map(m => m.host).filter(Boolean))];
+      const formats = [...new Set(allMatches.map(m => m.format).filter(Boolean))];
+      const events = [...new Set(allMatches.map(m => m.eventName).filter(Boolean))];
 
-        function populateFilters() {
-            const hosts = [...new Set(matches.map(m => m.host))].filter(Boolean);
-            const formats = [...new Set(matches.map(m => m.format))].filter(Boolean);
-            const durations = [...new Set(matches.map(m => m.duration))].filter(Boolean);
-            const points = [...new Set(matches.map(m => m.points))].filter(Boolean);
-            const events = [...new Set(matches.map(m => m.eventName))].filter(Boolean);
+      updateSelect('filter-host', hosts);
+      updateSelect('filter-format', formats);
+      updateSelect('filter-event', events);
+    }
 
-            fillSelect('filterHost', hosts);
-            fillSelect('filterFormat', formats);
-            fillSelect('filterDuration', durations);
-            fillSelect('filterPoints', points);
-            fillSelect('filterEvent', events);
-        }
+    function updateSelect(id, items) {
+      const select = document.getElementById(id);
+      const current = select.value;
+      select.innerHTML = `<option value="">All ${id.replace('filter-', '').toUpperCase()}</option>` + 
+        items.map(i => `<option value="${i}">${i}</option>`).join('');
+      select.value = current;
+    }
 
-        function fillSelect(id, options) {
-            const sel = document.getElementById(id);
-            const currentVal = sel.value;
-            sel.innerHTML = `<option value="">All ${id.replace('filter', '')}s</option>`;
-            options.forEach(opt => {
-                const o = document.createElement('option');
-                o.value = opt;
-                o.textContent = opt;
-                sel.appendChild(o);
-            });
-            sel.value = currentVal;
-        }
+    function resetFilters() {
+      document.getElementById('filter-host').value = "";
+      document.getElementById('filter-format').value = "";
+      document.getElementById('filter-event').value = "";
+      applyFilters();
+    }
 
-        function calculateLeaderboard() {
-            const hostFilter = document.getElementById('filterHost').value;
-            const formatFilter = document.getElementById('filterFormat').value;
-            const durationFilter = document.getElementById('filterDuration').value;
-            const pointsFilter = document.getElementById('filterPoints').value;
-            const eventFilter = document.getElementById('filterEvent').value;
-            const searchQuery = document.getElementById('searchPlayer').value.toLowerCase().trim();
+    function applyFilters() {
+      const hostVal = document.getElementById('filter-host').value;
+      const formatVal = document.getElementById('filter-format').value;
+      const eventVal = document.getElementById('filter-event').value;
 
-            const hasActiveFilters = hostFilter || formatFilter || durationFilter || pointsFilter || eventFilter;
-            document.getElementById('btnClearFilters').classList.toggle('hidden', !hasActiveFilters);
+      const filtered = allMatches.filter(m => {
+        if (hostVal && m.host !== hostVal) return false;
+        if (formatVal && m.format !== formatVal) return false;
+        if (eventVal && m.eventName !== eventVal) return false;
+        if (String(m.playerA).toUpperCase() === "BGS" || String(m.playerB).toUpperCase() === "BGS") return false;
+        return true;
+      });
 
-            // Filter matches
-            const filteredMatches = matches.filter(m => {
-                if (hostFilter && m.host !== hostFilter) return false;
-                if (formatFilter && m.format !== formatFilter) return false;
-                if (durationFilter && m.duration !== durationFilter) return false;
-                if (pointsFilter && m.points !== pointsFilter) return false;
-                if (eventFilter && m.eventName !== eventFilter) return false;
-                return true;
-            });
+      calculateAndRenderLeaderboard(filtered);
+    }
 
-            document.getElementById('statActiveMatches').textContent = `${filteredMatches.length} / ${matches.length}`;
+    function calculateAndRenderLeaderboard(matches) {
+      const stats = {};
 
-            // Extract unique players excluding 'BGS'
-            const playerSet = new Set();
-            filteredMatches.forEach(m => {
-                if (m.playerA && String(m.playerA).toUpperCase() !== 'BGS') playerSet.add(m.playerA);
-                if (m.playerB && String(m.playerB).toUpperCase() !== 'BGS') playerSet.add(m.playerB);
-            });
+      matches.forEach(m => {
+        const p1 = m.playerA;
+        const p2 = m.playerB;
+        if (!p1 || !p2) return;
 
-            const playerStats = {};
-            playerSet.forEach(p => {
-                playerStats[p] = {
-                    player: p,
-                    stdElo: 1500,
-                    movElo: 1500,
-                    games: 0,
-                    wins: 0,
-                    vp: 0,
-                    vpConceded: 0,
-                    vpDiff: 0,
-                    winRate: 0
-                };
-            });
+        if (!stats[p1]) stats[p1] = { games: 0, wins: 0, stdElo: 1500, movElo: 1500, vp: 0, vpDiff: 0 };
+        if (!stats[p2]) stats[p2] = { games: 0, wins: 0, stdElo: 1500, movElo: 1500, vp: 0, vpDiff: 0 };
 
-            const K = 32;
-            filteredMatches.forEach(m => {
-                const p1 = m.playerA;
-                const p2 = m.playerB;
-                const validP1 = p1 && String(p1).toUpperCase() !== 'BGS' && playerStats[p1];
-                const validP2 = p2 && String(p2).toUpperCase() !== 'BGS' && playerStats[p2];
+        stats[p1].games++;
+        stats[p2].games++;
 
-                if (!validP1 && !validP2) return;
+        stats[p1].vp += Number(m.vpA || 0);
+        stats[p2].vp += Number(m.vpB || 0);
+        stats[p1].vpDiff += (Number(m.vpA || 0) - Number(m.vpB || 0));
+        stats[p2].vpDiff += (Number(m.vpB || 0) - Number(m.vpA || 0));
 
-                const p1VP = Number(m.vpA) || 0;
-                const p2VP = Number(m.vpB) || 0;
-                const p1Won = Number(m.result) === 1;
+        if (Number(m.result) === 1) stats[p1].wins++;
+        if (Number(m.result) === 0) stats[p2].wins++;
 
-                if (validP1) {
-                    playerStats[p1].games += 1;
-                    if (p1Won) playerStats[p1].wins += 1;
-                    playerStats[p1].vp += p1VP;
-                    playerStats[p1].vpConceded += p2VP;
-                }
+        // Elo adjustments
+        if (m.postEloA && m.preEloA) stats[p1].stdElo += (Number(m.postEloA) - Number(m.preEloA));
+        if (m.postEloB && m.preEloB) stats[p2].stdElo += (Number(m.postEloB) - Number(m.preEloB));
+        if (m.postMovA && m.preEloA) stats[p1].movElo += (Number(m.postMovA) - Number(m.preEloA));
+        if (m.postMovB && m.preEloB) stats[p2].movElo += (Number(m.postMovB) - Number(m.preEloB));
+      });
 
-                if (validP2) {
-                    playerStats[p2].games += 1;
-                    if (!p1Won) playerStats[p2].wins += 1;
-                    playerStats[p2].vp += p2VP;
-                    playerStats[p2].vpConceded += p1VP;
-                }
+      const tbody = document.getElementById('leaderboard-body');
+      const players = Object.keys(stats).sort();
 
-                if (validP1 && validP2) {
-                    // Standard Elo
-                    const r1 = playerStats[p1].stdElo;
-                    const r2 = playerStats[p2].stdElo;
-                    const e1 = 1 / (1 + Math.pow(10, (r2 - r1) / 400));
-                    const e2 = 1 / (1 + Math.pow(10, (r1 - r2) / 400));
-                    const s1 = p1Won ? 1 : 0;
-                    const s2 = p1Won ? 0 : 1;
+      if (players.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No match records found for current filters.</td></tr>`;
+        return;
+      }
 
-                    playerStats[p1].stdElo += K * (s1 - e1);
-                    playerStats[p2].stdElo += K * (s2 - e2);
+      tbody.innerHTML = players.map(p => {
+        const s = stats[p];
+        const winRate = s.games > 0 ? ((s.wins / s.games) * 100).toFixed(1) + '%' : '0.0%';
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="p-4 font-medium text-white">${p}</td>
+            <td class="p-4 text-right">${Math.round(s.stdElo)}</td>
+            <td class="p-4 text-right">${Math.round(s.movElo)}</td>
+            <td class="p-4 text-right text-slate-300">${s.games}</td>
+            <td class="p-4 text-right text-slate-300">${winRate}</td>
+            <td class="p-4 text-right text-slate-300">${s.vp}</td>
+            <td class="p-4 text-right ${s.vpDiff >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${s.vpDiff > 0 ? '+' + s.vpDiff : s.vpDiff}</td>
+          </tr>
+        `;
+      }).join('');
+    }
 
-                    // MoV Elo
-                    const margin = Math.abs(p1VP - p2VP);
-                    const movMultiplier = Math.log(margin + 1) * (2.2 / ((p1Won ? r1 - r2 : r2 - r1) * 0.001 + 2.2));
-                    const mr1 = playerStats[p1].movElo;
-                    const mr2 = playerStats[p2].movElo;
-                    const me1 = 1 / (1 + Math.pow(10, (mr2 - mr1) / 400));
-                    const me2 = 1 / (1 + Math.pow(10, (mr1 - mr2) / 400));
-
-                    playerStats[p1].movElo += K * movMultiplier * (s1 - me1);
-                    playerStats[p2].movElo += K * movMultiplier * (s2 - me2);
-                }
-            });
-
-            let list = Object.values(playerStats).map(p => {
-                p.vpDiff = p.vp - p.vpConceded;
-                p.winRate = p.games > 0 ? (p.wins / p.games) : 0;
-                p.stdElo = Math.round(p.stdElo);
-                p.movElo = Math.round(p.movElo);
-                return p;
-            });
-
-            if (searchQuery) {
-                list = list.filter(p => p.player.toLowerCase().includes(searchQuery));
-            }
-
-            document.getElementById('statActivePlayers').textContent = list.length;
-            return list;
-        }
-
-        function renderLeaderboard() {
-            const data = calculateLeaderboard();
-            const tbody = document.getElementById('leaderboardBody');
-            const emptyState = document.getElementById('emptyState');
-
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
-            emptyState.classList.add('hidden');
-
-            // Render natural order rows across exactly 7 columns
-            tbody.innerHTML = data.map((p, idx) => `
-                <tr class="hover:bg-slate-800/50 transition border-b border-slate-800/40">
-                    <td class="py-3 px-4 text-center font-bold text-slate-500 text-[11px]">${idx + 1}</td>
-                    <td class="py-3 px-4 font-semibold text-slate-100 flex items-center gap-2">
-                        <div class="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-emerald-400">
-                            ${p.player.substring(0, 2).toUpperCase()}
-                        </div>
-                        ${p.player}
-                    </td>
-                    <td class="py-3 px-4 text-right font-bold text-emerald-400">${p.stdElo}</td>
-                    <td class="py-3 px-4 text-right font-medium text-slate-200">${p.movElo}</td>
-                    <td class="py-3 px-4 text-right text-slate-300">${p.games}</td>
-                    <td class="py-3 px-4 text-right text-slate-300">${(p.winRate * 100).toFixed(1)}%</td>
-                    <td class="py-3 px-4 text-right text-slate-300">${p.vp}</td>
-                    <td class="py-3 px-4 text-right font-medium ${p.vpDiff > 0 ? 'text-emerald-400' : p.vpDiff < 0 ? 'text-rose-400' : 'text-slate-400'}">
-                        ${p.vpDiff > 0 ? '+' : ''}${p.vpDiff}
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function setupEventListeners() {
-            ['filterHost', 'filterFormat', 'filterDuration', 'filterPoints', 'filterEvent'].forEach(id => {
-                document.getElementById(id).addEventListener('change', renderLeaderboard);
-            });
-
-            document.getElementById('searchPlayer').addEventListener('input', renderLeaderboard);
-
-            document.getElementById('btnClearFilters').addEventListener('click', () => {
-                ['filterHost', 'filterFormat', 'filterDuration', 'filterPoints', 'filterEvent'].forEach(id => {
-                    document.getElementById(id).value = '';
-                });
-                document.getElementById('searchPlayer').value = '';
-                renderLeaderboard();
-            });
-
-            document.getElementById('btnRefreshData').addEventListener('click', fetchLiveData);
-
-            // Toggle Guide Panel
-            const btnToggleGuide = document.getElementById('btnToggleGuide');
-            const btnCloseGuide = document.getElementById('btnCloseGuide');
-            const guidePanel = document.getElementById('guidePanel');
-            const mainContainer = document.getElementById('mainContainer');
-
-            function toggleGuide() {
-                guideVisible = !guideVisible;
-                if (guideVisible) {
-                    guidePanel.classList.remove('hidden');
-                    mainContainer.classList.remove('lg:col-span-9');
-                    mainContainer.classList.add('lg:col-span-6');
-                } else {
-                    guidePanel.classList.add('hidden');
-                    mainContainer.classList.remove('lg:col-span-6');
-                    mainContainer.classList.add('lg:col-span-9');
-                }
-            }
-
-            btnToggleGuide.addEventListener('click', toggleGuide);
-            btnCloseGuide.addEventListener('click', toggleGuide);
-
-            // Data Modal
-            const dataModal = document.getElementById('dataModal');
-            document.getElementById('btnOpenDataModal').addEventListener('click', () => {
-                document.getElementById('rawMatchInput').value = JSON.stringify(matches, null, 2);
-                dataModal.classList.remove('hidden');
-            });
-            document.getElementById('btnCloseDataModal').addEventListener('click', () => dataModal.classList.add('hidden'));
-            document.getElementById('btnCancelImport').addEventListener('click', () => dataModal.classList.add('hidden'));
-        }
-    </script>
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      populateFilters();
+      applyFilters();
+      fetchLiveLeaderboardData(); // tries fetching live sheet in background
+    });
+  </script>
 </body>
 </html>
