@@ -16,7 +16,7 @@
       <p class="text-xs text-slate-400">Live standings & player statistics</p>
     </div>
     <div class="flex items-center gap-3">
-      <span id="sync-status" class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Using Offline Cache</span>
+      <span id="sync-status" class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Loading...</span>
       <button onclick="fetchLiveLeaderboardData()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-medium rounded-lg transition">Sync Live Sheet</button>
       <button onclick="toggleGuide()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg transition">Guide</button>
     </div>
@@ -76,13 +76,13 @@
 
   </div>
 
-  <!-- Guide Drawer / Modal Overlay -->
+  <!-- Guide Drawer -->
   <div id="guide-drawer" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex justify-end z-50">
     <div class="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full p-6 overflow-y-auto flex flex-col justify-between">
       <div>
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-lg font-bold">User Guide</h2>
-          <button onclick="toggleGuide()" class="text-slate-400 hover:text-white">&times;</button>
+          <button onclick="toggleGuide()" class="text-slate-400 hover:text-white text-xl">&times;</button>
         </div>
         <div class="space-y-4 text-sm text-slate-300">
           <h3 class="font-semibold text-white">Event Filters</h3>
@@ -101,38 +101,50 @@
   <script>
     const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwyJ0SLmWwFWVDlEupWjsZEP97gAFCph0aLFh0tWheQC8-o3ri8MHqvJ_LS8yfBCzG5/exec";
 
-    // Fallback sample data so the page never opens blank
+    // Safe fallback sample data
     let allMatches = [
-      { host: "Northern Alliance", format: "Solo", eventName: "Winter's Wrath", playerA: "Player One", playerB: "Player Two", result: 1, vpA: 20, vpB: 10, preEloA: 1500, preEloB: 1500, postEloA: 1516, postEloB: 1484, postMovA: 1520, postMovB: 1480 },
-      { host: "Northern Alliance", format: "Solo", eventName: "Winter's Wrath", playerA: "Player Three", playerB: "Player One", result: 0, vpA: 5, vpB: 18, preEloA: 1500, preEloB: 1516, postEloA: 1484, postEloB: 1532, postMovA: 1475, postMovB: 1545 }
+      { host: "Northern Alliance", format: "Solo", eventName: "Winter's Wrath", playerA: "Player One", playerB: "Player Two", result: 1, vpA: 20, vpB: 10, preEloA: 1500, preEloB: 1500, postEloA: 1516, postEloB: 1484, postMovA: 1520, postMovB: 1480 }
     ];
 
     function toggleGuide() {
-      const drawer = document.getElementById('guide-drawer');
-      drawer.classList.toggle('hidden');
+      document.getElementById('guide-drawer').classList.toggle('hidden');
+    }
+
+    function updateStatus(text, type) {
+      const statusEl = document.getElementById('sync-status');
+      statusEl.textContent = text;
+      if (type === 'success') {
+        statusEl.className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+      } else if (type === 'error') {
+        statusEl.className = "text-xs px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
+      } else {
+        statusEl.className = "text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20";
+      }
     }
 
     async function fetchLiveLeaderboardData() {
-      const statusEl = document.getElementById('sync-status');
-      statusEl.textContent = "Syncing...";
-      statusEl.className = "text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20";
-
+      updateStatus("Syncing...", "loading");
       try {
         const response = await fetch(GOOGLE_WEB_APP_URL);
-        if (!response.ok) throw new Error("Network response failed");
+        if (!response.ok) throw new Error("HTTP error " + response.status);
         const data = await response.json();
+        
         if (Array.isArray(data) && data.length > 0) {
           allMatches = data;
-          statusEl.textContent = "Live Synced";
-          statusEl.className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+          updateStatus("Live Synced", "success");
+        } else {
+          updateStatus("Empty Sheet", "error");
         }
       } catch (err) {
-        console.warn("Could not reach live Google Sheet. Using cached/sample data.", err);
-        statusEl.textContent = "Offline Mode";
-        statusEl.className = "text-xs px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
+        console.warn("Fetch failed, using local fallback data:", err);
+        updateStatus("Offline Mode", "error");
       }
-      populateFilters();
-      applyFilters();
+      try {
+        populateFilters();
+        applyFilters();
+      } catch (renderErr) {
+        console.error("Rendering error:", renderErr);
+      }
     }
 
     function populateFilters() {
@@ -147,8 +159,10 @@
 
     function updateSelect(id, items) {
       const select = document.getElementById(id);
+      if (!select) return;
       const current = select.value;
-      select.innerHTML = `<option value="">All ${id.replace('filter-', '').toUpperCase()}</option>` + 
+      const labelName = id.replace('filter-', '').toUpperCase();
+      select.innerHTML = `<option value="">All ${labelName}</option>` + 
         items.map(i => `<option value="${i}">${i}</option>`).join('');
       select.value = current;
     }
@@ -166,10 +180,11 @@
       const eventVal = document.getElementById('filter-event').value;
 
       const filtered = allMatches.filter(m => {
+        if (!m) return false;
         if (hostVal && m.host !== hostVal) return false;
         if (formatVal && m.format !== formatVal) return false;
         if (eventVal && m.eventName !== eventVal) return false;
-        if (String(m.playerA).toUpperCase() === "BGS" || String(m.playerB).toUpperCase() === "BGS") return false;
+        if (String(m.playerA || "").toUpperCase() === "BGS" || String(m.playerB || "").toUpperCase() === "BGS") return false;
         return true;
       });
 
@@ -190,15 +205,16 @@
         stats[p1].games++;
         stats[p2].games++;
 
-        stats[p1].vp += Number(m.vpA || 0);
-        stats[p2].vp += Number(m.vpB || 0);
-        stats[p1].vpDiff += (Number(m.vpA || 0) - Number(m.vpB || 0));
-        stats[p2].vpDiff += (Number(m.vpB || 0) - Number(m.vpA || 0));
+        const vpA = Number(m.vpA || 0);
+        const vpB = Number(m.vpB || 0);
+        stats[p1].vp += vpA;
+        stats[p2].vp += vpB;
+        stats[p1].vpDiff += (vpA - vpB);
+        stats[p2].vpDiff += (vpB - vpA);
 
         if (Number(m.result) === 1) stats[p1].wins++;
         if (Number(m.result) === 0) stats[p2].wins++;
 
-        // Elo adjustments
         if (m.postEloA && m.preEloA) stats[p1].stdElo += (Number(m.postEloA) - Number(m.preEloA));
         if (m.postEloB && m.preEloB) stats[p2].stdElo += (Number(m.postEloB) - Number(m.preEloB));
         if (m.postMovA && m.preEloA) stats[p1].movElo += (Number(m.postMovA) - Number(m.preEloA));
@@ -230,11 +246,15 @@
       }).join('');
     }
 
-    // Initialize on load
+    // Initialize immediately on load
     window.addEventListener('DOMContentLoaded', () => {
-      populateFilters();
-      applyFilters();
-      fetchLiveLeaderboardData(); // tries fetching live sheet in background
+      try {
+        populateFilters();
+        applyFilters();
+      } catch (e) {
+        console.error("Initial render error:", e);
+      }
+      fetchLiveLeaderboardData();
     });
   </script>
 </body>
